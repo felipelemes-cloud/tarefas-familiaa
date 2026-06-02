@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Nossas Tarefas 🏡</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Nunito+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#f7f5f2;--card:#fff;--border:#e8e3dc;--subtle:#f2ede8;
+  --feeh:#e8609a;--feeh-light:#fde8f2;
+  --nick:#5b7fe8;--nick-light:#eaf0fd;
+  --both:#2eb89a;--both-light:#e0f7f3;
+  --text:#1a1a1a;--muted:#888;
+  --pending-bg:#fff8ed;--pending-text:#b07300;
+  --doing-bg:#eef2fd;--doing-text:#3a5cc4;
+  --done-bg:#e0f7f3;--done-text:#1a8a70;
+  --high-bg:#fdecea;--high-text:#c0392b;
+  --med-bg:#fff8ed;--med-text:#b07300;
+  --low-bg:#f0faf5;--low-text:#1a8a70;
+}
+body{font-family:'Nunito Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:80px}
+.header{padding:20px 16px 8px;text-align:center;background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:50}
+.header h1{font-family:'Nunito',sans-serif;font-size:20px;font-weight:800}
+.sync-row{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:4px;font-size:11px;color:var(--muted)}
+.dot{width:7px;height:7px;border-radius:50%;background:#ccc;flex-shrink:0;transition:background .3s}
+.dot.ok{background:#2eb89a}
+.dot.spin{background:#f5a623;animation:blink 1s infinite}
+.dot.err{background:#e05c5c}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.tabs{display:flex;gap:8px;padding:12px 16px;background:var(--card);border-bottom:1px solid var(--border)}
+.tab{flex:1;padding:9px 4px;border:1.5px solid var(--border);border-radius:12px;background:none;font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;cursor:pointer;color:var(--muted);transition:all .18s}
+.tab.t-feeh{background:var(--feeh-light);border-color:var(--feeh);color:var(--feeh)}
+.tab.t-nick{background:var(--nick-light);border-color:var(--nick);color:var(--nick)}
+.tab.t-both{background:var(--both-light);border-color:var(--both);color:var(--both)}
+.content{padding:12px 16px}
+.add-box{background:var(--card);border:1.5px dashed var(--border);border-radius:16px;padding:14px;margin-bottom:14px}
+.add-box.c-feeh{border-color:var(--feeh)}
+.add-box.c-nick{border-color:var(--nick)}
+.add-box.c-both{border-color:var(--both)}
+.add-box input,.add-box select,.add-box textarea{width:100%;border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;font-family:'Nunito Sans',sans-serif;font-size:14px;background:var(--bg);color:var(--text);outline:none;margin-bottom:8px;-webkit-appearance:none;appearance:none}
+.add-box textarea{resize:none;height:52px;line-height:1.4}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.add-btn{width:100%;padding:12px;border:none;border-radius:11px;font-family:'Nunito',sans-serif;font-size:14px;font-weight:800;cursor:pointer;color:#fff;transition:opacity .15s;margin-top:2px}
+.add-btn:active{opacity:.8}
+.add-btn.c-feeh{background:var(--feeh)}
+.add-btn.c-nick{background:var(--nick)}
+.add-btn.c-both{background:var(--both)}
+.sec-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin:14px 0 8px;display:flex;align-items:center;justify-content:space-between}
+.sec-count{background:var(--subtle);color:var(--muted);font-size:10px;padding:2px 8px;border-radius:20px}
+.task{background:var(--card);border:1.5px solid var(--border);border-radius:14px;padding:13px 14px;margin-bottom:8px;transition:opacity .2s}
+.task.is-done{opacity:.55}
+.task-top{display:flex;gap:10px;align-items:flex-start}
+.circle{width:24px;height:24px;border-radius:50%;border:2px solid var(--border);background:none;cursor:pointer;flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;transition:all .18s}
+.task-body{flex:1;min-width:0}
+.task-title{font-family:'Nunito',sans-serif;font-size:14px;font-weight:700;line-height:1.35;word-break:break-word}
+.task-title.struck{text-decoration:line-through;color:var(--muted)}
+.task-note{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.4}
+.pills{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.pill{font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px}
+.p-pending{background:var(--pending-bg);color:var(--pending-text)}
+.p-doing{background:var(--doing-bg);color:var(--doing-text)}
+.p-done{background:var(--done-bg);color:var(--done-text)}
+.p-high{background:var(--high-bg);color:var(--high-text)}
+.p-med{background:var(--med-bg);color:var(--med-text)}
+.p-low{background:var(--low-bg);color:var(--low-text)}
+.p-del{background:#f3eeff;color:#6d3db5;border:1px solid #d8c0f8}
+.task-actions{display:flex;gap:6px;margin-top:10px}
+.act{padding:6px 12px;border:1.5px solid var(--border);border-radius:9px;font-family:'Nunito',sans-serif;font-size:12px;font-weight:700;background:none;cursor:pointer;color:var(--muted);transition:all .15s}
+.act:active{opacity:.7}
+.act.del{color:#e05c5c}
+.empty{text-align:center;padding:40px 16px;color:var(--muted);font-size:14px}
+.empty-ico{font-size:40px;margin-bottom:10px}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--border);display:flex;padding:8px 0 env(safe-area-inset-bottom,12px)}
+.nav-btn{flex:1;background:none;border:none;cursor:pointer;font-family:'Nunito',sans-serif;font-size:10px;font-weight:700;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 0}
+.nav-btn .ico{font-size:20px;line-height:1}
+.nav-btn.t-feeh{color:var(--feeh)}
+.nav-btn.t-nick{color:var(--nick)}
+.nav-btn.t-both{color:var(--both)}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;display:flex;align-items:flex-end;opacity:0;pointer-events:none;transition:opacity .22s}
+.overlay.show{opacity:1;pointer-events:all}
+.modal{background:var(--card);border-radius:20px 20px 0 0;padding:20px 16px;width:100%;transform:translateY(100%);transition:transform .25s cubic-bezier(.34,1.1,.64,1)}
+.overlay.show .modal{transform:translateY(0)}
+.modal h3{font-family:'Nunito',sans-serif;font-size:17px;font-weight:800;margin-bottom:14px}
+.modal input,.modal select{width:100%;border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;font-size:14px;background:var(--bg);color:var(--text);outline:none;margin-bottom:10px;font-family:'Nunito Sans',sans-serif;-webkit-appearance:none}
+.modal-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px;padding-bottom:env(safe-area-inset-bottom,8px)}
+.m-btn{padding:13px;border-radius:11px;font-family:'Nunito',sans-serif;font-size:14px;font-weight:800;cursor:pointer;border:1.5px solid var(--border);background:none;color:var(--text)}
+.m-btn.save-feeh{background:var(--feeh);border-color:var(--feeh);color:#fff}
+.m-btn.save-nick{background:var(--nick);border-color:var(--nick);color:#fff}
+.m-btn.save-both{background:var(--both);border-color:var(--both);color:#fff}
+.toast{position:fixed;top:80px;left:50%;transform:translateX(-50%) translateY(-10px);background:#1a1a1a;color:#fff;padding:9px 18px;border-radius:30px;font-size:13px;font-weight:600;font-family:'Nunito',sans-serif;opacity:0;transition:all .3s;z-index:200;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>nossas tarefas 🏡</h1>
+  <div class="sync-row">
+    <div class="dot spin" id="dot"></div>
+    <span id="syncTxt">conectando...</span>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab" id="tab-feeh" onclick="setTab('feeh')">🌸 Feeh</button>
+  <button class="tab" id="tab-nick" onclick="setTab('nick')">⚡ Nick</button>
+  <button class="tab" id="tab-both" onclick="setTab('both')">🤝 Juntos</button>
+</div>
+
+<div class="content" id="content"></div>
+
+<div class="bottom-nav">
+  <button class="nav-btn" id="nav-feeh" onclick="setTab('feeh')"><span class="ico">🌸</span>Feeh</button>
+  <button class="nav-btn" id="nav-nick" onclick="setTab('nick')"><span class="ico">⚡</span>Nick</button>
+  <button class="nav-btn" id="nav-both" onclick="setTab('both')"><span class="ico">🤝</span>Juntos</button>
+</div>
+
+<div class="overlay" id="editOverlay" onclick="overlayClick(event)">
+  <div class="modal">
+    <h3>Editar tarefa</h3>
+    <input type="text" id="eTitle" placeholder="Título">
+    <input type="text" id="eNote" placeholder="Observação (opcional)">
+    <select id="ePriority">
+      <option value="alta">🔴 Alta prioridade</option>
+      <option value="media">🟡 Média prioridade</option>
+      <option value="baixa">🟢 Baixa prioridade</option>
+    </select>
+    <select id="eStatus">
+      <option value="pendente">Pendente</option>
+      <option value="fazendo">Em andamento</option>
+      <option value="feito">Concluída</option>
+    </select>
+    <div class="modal-btns">
+      <button class="m-btn" onclick="closeEdit()">Cancelar</button>
+      <button class="m-btn" id="saveBtn" onclick="saveEdit()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDNUAKBJW03nZ33f3HaR9uT874Dgq7avM0",
+  authDomain: "tarefas-familia-ebb36.firebaseapp.com",
+  databaseURL: "https://tarefas-familia-ebb36-default-rtdb.firebaseio.com",
+  projectId: "tarefas-familia-ebb36",
+  storageBucket: "tarefas-familia-ebb36.firebasestorage.app",
+  messagingSenderId: "1045261946269",
+  appId: "1:1045261946269:web:d260e92bb5ba6b690cb374"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const tasksRef = ref(db, 'tarefas');
+
+let tasks = [];
+let tab = 'feeh';
+let editId = null;
+let ignoreNext = false;
+
+const names = {feeh:'Feeh', nick:'Nick', both:'Juntos'};
+
+function setSync(state, txt){
+  const dot = document.getElementById('dot');
+  document.getElementById('syncTxt').textContent = txt;
+  dot.className = 'dot' + (state ? ' '+state : '');
+}
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2000);
+}
+
+// Escuta mudanças em tempo real do Firebase
+onValue(tasksRef, (snapshot) => {
+  const data = snapshot.val();
+  tasks = data ? Object.values(data) : [];
+  setSync('ok', 'sincronizado ✓');
+  render();
+});
+
+async function save(){
+  setSync('spin','salvando...');
+  try {
+    const obj = {};
+    tasks.forEach(t => { obj[t.id] = t; });
+    await set(tasksRef, obj);
+    showToast('✓ Salvo!');
+  } catch(e){
+    setSync('err','erro ao salvar');
+    showToast('❌ Erro ao salvar');
+  }
+}
+
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+
+window.setTab = function(t){
+  tab = t;
+  ['feeh','nick','both'].forEach(x=>{
+    const active = x===t;
+    document.getElementById('tab-'+x).className = 'tab'+(active?' t-'+x:'');
+    document.getElementById('nav-'+x).className = 'nav-btn'+(active?' t-'+x:'');
+  });
+  render();
+}
+
+window.addTask = function(){
+  const title = document.getElementById('nTitle').value.trim();
+  if(!title){ document.getElementById('nTitle').focus(); return; }
+  const note = document.getElementById('nNote').value.trim();
+  const priority = document.getElementById('nPriority').value;
+  const delegated = document.getElementById('nDelegate').value;
+  tasks.push({id:uid(), owner:tab, title, note, priority, status:'pendente', delegated, at:Date.now()});
+  document.getElementById('nTitle').value='';
+  document.getElementById('nNote').value='';
+  save();
+}
+
+window.cycle = function(id){
+  const t = tasks.find(x=>x.id===id); if(!t) return;
+  const c = {pendente:'fazendo', fazendo:'feito', feito:'pendente'};
+  t.status = c[t.status];
+  save();
+}
+
+window.del = function(id){
+  tasks = tasks.filter(x=>x.id!==id);
+  save();
+}
+
+window.openEdit = function(id){
+  const t = tasks.find(x=>x.id===id); if(!t) return;
+  editId = id;
+  document.getElementById('eTitle').value = t.title;
+  document.getElementById('eNote').value = t.note||'';
+  document.getElementById('ePriority').value = t.priority;
+  document.getElementById('eStatus').value = t.status;
+  document.getElementById('saveBtn').className = 'm-btn save-'+tab;
+  document.getElementById('editOverlay').classList.add('show');
+}
+
+window.saveEdit = function(){
+  const t = tasks.find(x=>x.id===editId); if(!t) return;
+  t.title = document.getElementById('eTitle').value.trim()||t.title;
+  t.note = document.getElementById('eNote').value.trim();
+  t.priority = document.getElementById('ePriority').value;
+  t.status = document.getElementById('eStatus').value;
+  closeEdit(); save();
+}
+
+window.closeEdit = function(){
+  document.getElementById('editOverlay').classList.remove('show');
+  editId = null;
+}
+
+window.overlayClick = function(e){
+  if(e.target.id==='editOverlay') closeEdit();
+}
+
+function sPill(s){
+  const m = {pendente:['p-pending','Pendente'], fazendo:['p-doing','Em andamento'], feito:['p-done','Concluída']};
+  const [c,l] = m[s]||m.pendente;
+  return `<span class="pill ${c}">${l}</span>`;
+}
+function pPill(p){
+  const m = {alta:['p-high','Alta'], media:['p-med','Média'], baixa:['p-low','Baixa']};
+  const [c,l] = m[p]||m.media;
+  return `<span class="pill ${c}">${l}</span>`;
+}
+function circleStyle(t){
+  const cols = {feeh:'var(--feeh)', nick:'var(--nick)', both:'var(--both)'};
+  const c = cols[t.owner]||'var(--border)';
+  if(t.status==='feito') return `border-color:#2eb89a;background:#2eb89a;color:#fff`;
+  if(t.status==='fazendo') return `border-color:${c};border-width:3px`;
+  return `border-color:${c}`;
+}
+function circleIcon(s){ return s==='feito'?'✓':s==='fazendo'?'…':''; }
+
+function card(t){
+  const isDone = t.status==='feito';
+  const fromOther = t.owner!==tab && t.delegated===tab;
+  const delBadge = t.delegated && t.delegated!=='none' ? `<span class="pill p-del">→ ${names[t.delegated]}</span>` : '';
+  const fromBadge = fromOther ? `<span class="pill p-del">de ${names[t.owner]}</span>` : '';
+  return `<div class="task${isDone?' is-done':''}">
+    <div class="task-top">
+      <button class="circle" onclick="cycle('${t.id}')" style="${circleStyle(t)}">${circleIcon(t.status)}</button>
+      <div class="task-body">
+        <div class="task-title${isDone?' struck':''}">${t.title}</div>
+        ${t.note?`<div class="task-note">${t.note}</div>`:''}
+        <div class="pills">${sPill(t.status)}${pPill(t.priority)}${delBadge}${fromBadge}</div>
+      </div>
+    </div>
+    <div class="task-actions">
+      <button class="act" onclick="openEdit('${t.id}')">✏️ editar</button>
+      <button class="act del" onclick="del('${t.id}')">🗑 excluir</button>
+    </div>
+  </div>`;
+}
+
+function render(){
+  const delOpts = tab==='feeh'
+    ? `<option value="none">Só para mim</option><option value="nick">→ Nick</option><option value="both">→ Juntos</option>`
+    : tab==='nick'
+    ? `<option value="none">Só para mim</option><option value="feeh">→ Feeh</option><option value="both">→ Juntos</option>`
+    : `<option value="none">Para os dois</option><option value="feeh">Só Feeh</option><option value="nick">Só Nick</option>`;
+
+  let html = `<div class="add-box c-${tab}">
+    <input type="text" id="nTitle" placeholder="Nova tarefa..." onkeydown="if(event.key==='Enter')addTask()">
+    <textarea id="nNote" placeholder="Observação (opcional)..."></textarea>
+    <div class="row2">
+      <select id="nPriority">
+        <option value="media">🟡 Média</option>
+        <option value="alta">🔴 Alta</option>
+        <option value="baixa">🟢 Baixa</option>
+      </select>
+      <select id="nDelegate">${delOpts}</select>
+    </div>
+    <button class="add-btn c-${tab}" onclick="addTask()">+ Adicionar</button>
+  </div>`;
+
+  const visible = tasks.filter(t => t.owner===tab || (t.delegated && t.delegated===tab));
+  const pOrd = {alta:0, media:1, baixa:2};
+  const sOrd = {pendente:0, fazendo:1, feito:2};
+  visible.sort((a,b) => sOrd[a.status]-sOrd[b.status] || pOrd[a.priority]-pOrd[b.priority]);
+
+  const active = visible.filter(t=>t.status!=='feito');
+  const done   = visible.filter(t=>t.status==='feito');
+
+  if(!visible.length){
+    html += `<div class="empty"><div class="empty-ico">✨</div>Nenhuma tarefa ainda!<br>Adicione a primeira acima.</div>`;
+  } else {
+    if(active.length){
+      html += `<div class="sec-label">Tarefas <span class="sec-count">${active.length}</span></div>`;
+      active.forEach(t=>{ html+=card(t); });
+    }
+    if(done.length){
+      html += `<div class="sec-label" style="margin-top:18px">Concluídas <span class="sec-count">${done.length}</span></div>`;
+      done.forEach(t=>{ html+=card(t); });
+    }
+  }
+
+  document.getElementById('content').innerHTML = html;
+}
+
+// init
+setTab('feeh');
+setSync('spin','conectando...');
+</script>
+</body>
+</html>
