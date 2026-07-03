@@ -106,6 +106,28 @@
   .tab{padding:5px 14px;border-radius:6px;font-size:.78rem;cursor:pointer;color:var(--muted);transition:all .2s;border:none;background:none;font-family:var(--font-body)}
   .tab.active{background:var(--card);color:var(--text);border:1px solid var(--border)}
   .empty{text-align:center;padding:2rem;color:var(--muted);font-size:.85rem}
+  /* financiamento */
+  .fin-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1.4rem;margin-bottom:2rem;position:relative;overflow:hidden}
+  .fin-card::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#7c6af7,#4fc3a1)}
+  .fin-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.2rem;flex-wrap:wrap;gap:8px}
+  .fin-title{font-size:.9rem;font-weight:500}
+  .fin-metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:1.4rem}
+  .fin-metric{background:var(--surface);border-radius:10px;padding:1rem}
+  .fin-metric-label{font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.35rem}
+  .fin-metric-value{font-family:var(--font-mono);font-size:1.2rem;font-weight:500}
+  .fin-progress-wrap{margin-bottom:1.4rem}
+  .fin-progress-label{display:flex;justify-content:space-between;font-size:.78rem;color:var(--muted);margin-bottom:.5rem}
+  .fin-progress-track{background:var(--border);border-radius:6px;height:10px;overflow:hidden}
+  .fin-progress-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,#7c6af7,#4fc3a1);transition:width .6s cubic-bezier(.34,1.2,.64,1)}
+  .fin-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;align-items:flex-end}
+  .fin-parcela-item{display:grid;grid-template-columns:auto 1fr auto auto auto;gap:10px;align-items:center;padding:.7rem 0;border-bottom:1px solid var(--border);font-size:.82rem}
+  .fin-parcela-item:last-child{border-bottom:none}
+  .fin-num{font-family:var(--font-mono);color:var(--muted);font-size:.75rem;width:28px}
+  .fin-parcela-date{color:var(--muted);font-family:var(--font-mono);font-size:.75rem}
+  .fin-parcela-val{font-family:var(--font-mono);color:var(--accent4);font-weight:500}
+  .fin-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:.9rem;padding:2px 6px;border-radius:4px;transition:color .2s}
+  .fin-del:hover{color:var(--accent4)}
+  .fin-empty{text-align:center;padding:1.5rem;color:var(--muted);font-size:.82rem}
   @media(max-width:768px){.main-grid{grid-template-columns:1fr}.cat-grid{grid-template-columns:1fr}.container{padding:1rem}}
 </style>
 </head>
@@ -198,6 +220,27 @@
       <div style="font-size:.9rem;font-weight:500;margin-bottom:1rem">Evolução Semanal</div>
       <div class="chart-wrap"><canvas id="weekChart"></canvas></div>
     </div>
+  </div>
+
+  <!-- financiamento -->
+  <div class="fin-card">
+    <div class="fin-header">
+      <div class="fin-title">🏠 Financiamento Imobiliário</div>
+      <span style="font-size:.72rem;color:var(--muted)" id="finTotalParc"></span>
+    </div>
+    <div class="fin-metrics" id="finMetrics"></div>
+    <div class="fin-progress-wrap">
+      <div class="fin-progress-label"><span id="finProgLabel">0 de 100 parcelas pagas</span><span id="finProgPct">0%</span></div>
+      <div class="fin-progress-track"><div class="fin-progress-fill" id="finProgFill" style="width:0%"></div></div>
+    </div>
+    <div style="font-size:.82rem;font-weight:500;margin-bottom:.8rem;color:var(--muted)">Registrar parcela paga</div>
+    <div class="fin-form">
+      <div class="filter-group"><span class="filter-label">Nº da Parcela</span><input type="number" id="finNum" placeholder="Ex: 12" min="1" max="100" step="1"></div>
+      <div class="filter-group"><span class="filter-label">Valor pago (R$)</span><input type="number" id="finVal" placeholder="0,00" min="0" step="0.01"></div>
+      <div class="filter-group"><span class="filter-label">Data do pagamento</span><input type="date" id="finDate"></div>
+      <div class="filter-group"><span class="filter-label">&nbsp;</span><button class="btn btn-primary" onclick="addParcela()" style="width:100%">Registrar</button></div>
+    </div>
+    <div class="fin-parcelas" id="finLista"></div>
   </div>
 
   <div class="add-form">
@@ -506,6 +549,100 @@ window.exportPDF = function(){
 };
 
 function hexRgb(h){return{r:parseInt(h.slice(1,3),16),g:parseInt(h.slice(3,5),16),b:parseInt(h.slice(5,7),16)};}
+
+
+// ---- FINANCIAMENTO ----
+const FIN_TOTAL = 100;
+let parcelas = [];
+let nextFinId = 1;
+const finRef = ref(db, 'finvista_parcelas');
+
+// set default date for fin form
+document.getElementById('finDate').valueAsDate = new Date();
+
+onValue(finRef, snap => {
+  const data = snap.val();
+  parcelas = data ? Object.values(data) : [];
+  nextFinId = parcelas.length ? Math.max(...parcelas.map(p=>Number(p.id)||0))+1 : 1;
+  renderFinanciamento();
+});
+
+async function saveParcelas(){
+  try{
+    const obj={};
+    parcelas.forEach(p=>{ obj['p'+p.id]=p; });
+    await set(finRef, obj);
+  } catch(e){ console.error('Erro ao salvar parcelas', e); }
+}
+
+window.addParcela = function(){
+  const num = parseInt(document.getElementById('finNum').value);
+  const val = parseFloat(document.getElementById('finVal').value);
+  const date = document.getElementById('finDate').value;
+  if(!num||num<1||num>FIN_TOTAL){alert('Número de parcela inválido (1 a '+FIN_TOTAL+').');return;}
+  if(!val||val<=0){alert('Informe o valor pago.');return;}
+  if(!date){alert('Informe a data.');return;}
+  if(parcelas.find(p=>p.num===num)){alert('Parcela '+num+' já foi registrada.');return;}
+
+  parcelas.push({id:nextFinId++, num, val, date});
+  // também lança como despesa no dashboard
+  transactions.push({id:nextId++, type:'expense', desc:'Financiamento parcela '+num, amount:val, cat:'Manutenção Casa', date});
+  document.getElementById('finNum').value='';
+  document.getElementById('finVal').value='';
+  saveParcelas();
+  save();
+  renderFinanciamento();
+  render();
+};
+
+window.deleteParcela = function(id){
+  const p = parcelas.find(x=>x.id==id);
+  if(!p) return;
+  if(!confirm('Remover parcela '+p.num+'? A despesa correspondente também será removida.')) return;
+  parcelas = parcelas.filter(x=>x.id!=id);
+  // remove matching tx
+  transactions = transactions.filter(t=>!(t.desc==='Financiamento parcela '+p.num && t.date===p.date));
+  saveParcelas();
+  save();
+  renderFinanciamento();
+  render();
+};
+
+function renderFinanciamento(){
+  const sorted = [...parcelas].sort((a,b)=>a.num-b.num);
+  const totalPago = sorted.reduce((s,p)=>s+Number(p.val),0);
+  const pagas = sorted.length;
+  const restantes = FIN_TOTAL - pagas;
+  const media = pagas>0 ? totalPago/pagas : 0;
+  const projecao = restantes * media;
+  const pct = Math.round((pagas/FIN_TOTAL)*100);
+
+  document.getElementById('finProgLabel').textContent = pagas+' de '+FIN_TOTAL+' parcelas pagas';
+  document.getElementById('finProgPct').textContent = pct+'%';
+  document.getElementById('finProgFill').style.width = pct+'%';
+  document.getElementById('finTotalParc').textContent = restantes+' restantes';
+
+  document.getElementById('finMetrics').innerHTML = [
+    ['Total Pago', fmtBRL(totalPago), '#4fc3a1'],
+    ['Parcelas Pagas', pagas+' / '+FIN_TOTAL, '#7c6af7'],
+    ['Valor Médio', fmtBRL(media), '#f5a623'],
+    ['Projeção Restante', fmtBRL(projecao), '#e05c5c'],
+  ].map(([l,v,c])=>`<div class="fin-metric"><div class="fin-metric-label">${l}</div><div class="fin-metric-value" style="color:${c}">${v}</div></div>`).join('');
+
+  const lista = document.getElementById('finLista');
+  if(!sorted.length){
+    lista.innerHTML='<div class="fin-empty">Nenhuma parcela registrada ainda.</div>';
+    return;
+  }
+  lista.innerHTML = '<div style="font-size:.78rem;font-weight:500;color:var(--muted);margin-bottom:.5rem">Histórico de parcelas</div>' +
+    sorted.map(p=>`<div class="fin-parcela-item">
+      <span class="fin-num">#${p.num}</span>
+      <span style="color:var(--text);font-size:.82rem">Parcela ${p.num}</span>
+      <span class="fin-parcela-date">${fmtDate(p.date)}</span>
+      <span class="fin-parcela-val">-${fmtBRL(p.val)}</span>
+      <button class="fin-del" onclick="deleteParcela(${p.id})" title="Remover">✕</button>
+    </div>`).join('');
+}
 
 // init
 setSyncUI('spin','conectando...');
